@@ -17,15 +17,16 @@ export const createSubmission = async (req, res) => {
             checklistAgreed,
             privacyAgreed,
             contributors,
-            funders
+            funders,
+            journalId
         } = req.body;
 
         // 1. Insert Submission
         await connection.query(
             `INSERT INTO submissions 
-            (id, user_id, title, section, abstract, keywords, competing_interests, subjects, comments_for_editor, checklist_agreed, privacy_agreed) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [id, req.user?.uid || null, title, section, abstract, keywords, competingInterests, subjects, commentsForEditor, checklistAgreed === 'true' || checklistAgreed === true, privacyAgreed === 'true' || privacyAgreed === true]
+            (id, user_id, title, section, abstract, keywords, competing_interests, subjects, comments_for_editor, checklist_agreed, privacy_agreed, journal_id) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [id, req.user?.uid || null, title, section, abstract, keywords, competingInterests, subjects, commentsForEditor, checklistAgreed === 'true' || checklistAgreed === true, privacyAgreed === 'true' || privacyAgreed === true, journalId || 'journal-of-universal-studies']
         );
 
         // 2. Insert Contributors
@@ -76,9 +77,17 @@ export const createSubmission = async (req, res) => {
 
 export const getAllSubmissions = async (req, res) => {
     try {
-        const [rows] = await pool.query(
-            'SELECT id as submission_id, title, section as section_name, status, created_at FROM submissions ORDER BY created_at DESC'
-        );
+        let query = 'SELECT id as submission_id, title, section as section_name, status, created_at FROM submissions';
+        let params = [];
+
+        if (req.user.role === 'admin' && req.user.journal_id) {
+            query += ' WHERE journal_id = ?';
+            params.push(req.user.journal_id);
+        }
+
+        query += ' ORDER BY created_at DESC';
+
+        const [rows] = await pool.query(query, params);
         res.json(rows);
     } catch (error) {
         console.error('Error fetching submissions:', error);

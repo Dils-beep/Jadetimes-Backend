@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS users (
     id VARCHAR(255) PRIMARY KEY, -- Firebase UID
     email VARCHAR(255) UNIQUE NOT NULL,
     name VARCHAR(255),
-    role ENUM('admin', 'user') DEFAULT 'user',
+    role ENUM('admin', 'user', 'super_admin') DEFAULT 'user',
+    journal_id VARCHAR(100) DEFAULT NULL, -- Assigned journal for role='admin'
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -26,6 +27,7 @@ CREATE TABLE IF NOT EXISTS submissions (
     status ENUM('pending', 'accepted', 'rejected') DEFAULT 'pending',
     checklist_agreed BOOLEAN DEFAULT FALSE,
     privacy_agreed BOOLEAN DEFAULT FALSE,
+    journal_id VARCHAR(100) DEFAULT 'journal-of-universal-studies', -- Which journal this was submitted to
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
