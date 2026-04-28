@@ -21,7 +21,7 @@ export const verifyToken = async (req, res, next) => {
         
         // Fetch additional user info from database (role, journal_id)
         try {
-            const [rows] = await pool.query('SELECT role, journal_id FROM users WHERE id = ?', [decodedToken.uid]);
+            const [rows] = await pool.query('SELECT role, journal_id FROM users WHERE firebase_uid = ?', [decodedToken.uid]);
             if (rows.length > 0) {
                 req.user = { ...decodedToken, role: rows[0].role, journal_id: rows[0].journal_id };
             } else {

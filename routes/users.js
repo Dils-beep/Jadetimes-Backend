@@ -15,13 +15,13 @@ router.post('/sync', verifyToken, async (req, res) => {
         if (existing.length > 0) {
             // Update existing user's ID (if it was pending) and other info
             await pool.query(
-                `UPDATE users SET id = ?, name = ? WHERE email = ?`,
-                [uid, name || existing[0].name || '', email]
+                `UPDATE users SET firebase_uid = ?, full_name = ? WHERE email = ?`,
+                [uid, name || existing[0].full_name || '', email]
             );
         } else {
             // Standard insert
             await pool.query(
-                `INSERT INTO users (id, email, name, role) VALUES (?, ?, ?, 'user')`,
+                `INSERT INTO users (firebase_uid, email, full_name, role) VALUES (?, ?, ?, 'user')`,
                 [uid, email, name || '']
             );
         }
@@ -36,7 +36,7 @@ router.post('/sync', verifyToken, async (req, res) => {
 // Get user profile
 router.get('/profile', verifyToken, async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [req.user.uid]);
+        const [rows] = await pool.query('SELECT * FROM users WHERE firebase_uid = ?', [req.user.uid]);
         if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
         res.json(rows[0]);
     } catch (error) {
@@ -68,7 +68,7 @@ router.post('/admin/assign', verifyToken, isSuperAdmin, async (req, res) => {
             // We use a temporary ID prefix for pending admins
             const tempId = `pending_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             await pool.query(
-                'INSERT INTO users (id, email, role, journal_id) VALUES (?, ?, ?, ?)',
+                'INSERT INTO users (firebase_uid, email, role, journal_id) VALUES (?, ?, ?, ?)',
                 [tempId, email, role, journal_id]
             );
         }
@@ -83,7 +83,7 @@ router.post('/admin/assign', verifyToken, isSuperAdmin, async (req, res) => {
 // Super Admin: Get all admins
 router.get('/admins', verifyToken, isSuperAdmin, async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT id, email, name, role, journal_id, created_at FROM users WHERE role IN ("admin", "super_admin")');
+        const [rows] = await pool.query('SELECT firebase_uid, email, full_name, role, journal_id, created_at FROM users WHERE role IN ("admin", "super_admin")');
         res.json(rows);
     } catch (error) {
         console.error('Error fetching admins:', error);
